@@ -1,0 +1,7 @@
+pandas
+confluent_kafka
+influxdb_client
+scikit-learn
+numpy
+joblib
+xgboost
