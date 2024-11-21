@@ -1,0 +1,109 @@
+version: "3.6"
+
+networks:
+  elk:
+    driver: bridge
+
+volumes:
+  kafka-data:
+  zookeeper-data:
+  spark-data:
+  influxdb-data:
+
+services:
+  zookeeper:
+    image: 'bitnami/zookeeper:latest'
+    networks:
+      - elk
+    ports:
+      - "2181:2181"
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    volumes:
+      - zookeeper-data:/bitnami/zookeeper
+
+  kafka:
+    image: 'bitnami/kafka:2.8.1'
+    networks:
+      - elk
+    ports:
+      - "9092:9092"
+      - "29092:29092" # Expose Kafka to the host
+    environment:
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    volumes:
+      - kafka-data:/bitnami/kafka
+
+  kafka_manager:
+    image: hlebalbau/kafka-manager:stable
+    networks:
+      - elk
+    ports:
+      - "9000:9000"
+    environment:
+      ZK_HOSTS: "zookeeper:2181"
+      APPLICATION_SECRET: "secure-random-secret"
+
+  spark-master:
+    image: bitnami/spark:latest
+    networks:
+      - elk
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8080:8080" # Spark Web UI
+      - "7077:7077" # Spark Master Port
+    volumes:
+      - spark-data:/bitnami/spark
+
+  spark-worker:
+    image: bitnami/spark:latest
+    networks:
+      - elk
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    depends_on:
+      - spark-master
+    ports:
+      - "8081:8081" # Worker Web UI
+
+  
+  spark-jupyter:
+    build:
+      context: .
+    networks:
+      - elk
+    container_name: spark-jupyter
+    depends_on:
+      - kafka
+      - spark-master
+    ports:
+      - "8888:8888"   # Jupyter Notebook port
+    environment:
+      - PYSPARK_SUBMIT_ARGS=--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.0 pyspark-shell
+    volumes:
+      - ./app:/app  # Mount your local app folder to the container
+
+  influxdb:
+    image: influxdb:latest
+    networks:
+      - elk
+    ports:
+      - "8086:8086"
+    environment:
+      - INFLUXDB_DB=iiot
+    volumes:
+      - influxdb-data:/var/lib/influxdb
