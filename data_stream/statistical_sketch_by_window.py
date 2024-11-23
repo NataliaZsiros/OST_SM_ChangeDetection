@@ -6,7 +6,7 @@ WINDOW_SIZE = 10
 
 # Kafka Consumer Configuration
 consumer_conf = {
-    'bootstrap.servers': 'localhost:9092',
+    'bootstrap.servers': 'kafka:9092',
     'group.id': 'stats-group',
     'auto.offset.reset': 'earliest'
 }
@@ -55,6 +55,7 @@ def process_field(field, value):
     window_variance = sliding_windows[field]['variance']
 
     # Display the results including numeric value
+    time.sleep(2)
     print(f"Field: {field}")
     print(f"Numeric Value: {value}")
     print(f"Sliding Window - Mean: {window_mean:.2f}, Min: {window_min}, Max: {window_max}, Count: {window_count}, Variance: {window_variance:.2f}")
