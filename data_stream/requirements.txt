@@ -1,3 +1,4 @@
+kafka-python
 pandas
 confluent_kafka
 influxdb_client

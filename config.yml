@@ -1,7 +1,7 @@
 version: '3.6'
 
 networks:
-  elk:
+  change-detection-network:
     driver: bridge
 
 services:
@@ -16,6 +16,8 @@ services:
       - INFLUXDB_ADMIN_PASSWORD=password
       - INFLUXDB_BUCKET=ChangeDetection
       - INFLUXDB_ORG=ChangeDetection_org
+    networks:
+      - change-detection-network
 
   zookeeper:
     image: 'bitnami/zookeeper:latest'
@@ -23,6 +25,8 @@ services:
       - '2181:2181'
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
+    networks:
+      - change-detection-network  
  
   kafka:
     image: 'bitnami/kafka:latest'
@@ -35,6 +39,8 @@ services:
       - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
       - zookeeper
+    networks:
+      - change-detection-network  
       
 
   kafka_manager:
@@ -44,6 +50,8 @@ services:
     environment:
       ZK_HOSTS: "zookeeper:2181"
       APPLICATION_SECRET: "random-secret"
+    networks:
+      - change-detection-network  
 
   kafka_data_stream_conversion:
     build:
@@ -55,6 +63,8 @@ services:
       - kafka
     environment:
       - KAFKA_BROKER=kafka:9092
+    networks:
+      - change-detection-network  
     #command: ["python", "/data_stream/kafka_data_stream_conversion.py"]
 
   model_training:
@@ -70,6 +80,8 @@ services:
       - INFLUXDB_TOKEN=ZBOYRf26zzXnAwWMht0_ysJHoadZFwTTsVSaOrbl1bQgnjx2OchxIHsK5qnQUvUczTRcGWbdA1SacnhQEKrZog==  # InfluxDB token
       - INFLUXDB_ORG=ChangeDetection_org
       - INFLUXDB_BUCKET=ChangeDetection
+    networks:
+      - change-detection-network  
     #command: ["python", "/model/model_training.py"]
 
   saving_influxdb: 
@@ -86,9 +98,32 @@ services:
       - INFLUXDB_ORG=ChangeDetection_org
       - INFLUXDB_BUCKET=ChangeDetection
     volumes:
-      - ./influxdb_save:/app  
+      - ./influxdb_save:/app 
+    networks:
+      - change-detection-network  
     #command: ["python", "/influxdb_save/saving_InfluxDB.py"]
 
+  pyspark:
+    image: jupyter/pyspark-notebook:latest
+    ports:
+      - "8888:8888"
+    build: 
+      context: ./Spark_Processing
+      dockerfile: Dockerfile
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    volumes:
+      - ./:/home/jovyan/work
+    depends_on:
+      - kafka
+      - influxdb
+    command: start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''
+    networks:
+      - change-detection-network
 
 volumes:
   influxdb-data:
