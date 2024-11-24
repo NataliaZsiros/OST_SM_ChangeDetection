@@ -12,7 +12,7 @@ consumer = Consumer(kafka_config)
 consumer.subscribe(['input'])  
 
 url = "http://influxdb:8086"
-token = "TxqYqsyBImk-hYtUMvFPZCCZJ8odQSAlDhEJEwRVPw0NYEpBtTrcBLwyQysVMFws50YrDi0YrIbGgnLX5xNKAw=="  
+token = "9FEx1XT4dRY-7H65r2ByRsz-XTlvaGlMN9itr9fMWxdw_K6TK7n7skk9p-wr55aZ3rf8sWnEZ24fSrwEd7V0qQ=="  
 org = "ChangeDetection_org"
 bucket = "ChangeDetection"
 username = "admin"
