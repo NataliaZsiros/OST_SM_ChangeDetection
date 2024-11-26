@@ -19,6 +19,20 @@ services:
     networks:
       - change-detection-network
 
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana-volume:/var/lib/grafana
+    depends_on:
+      - influxdb
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    networks:
+      - change-detection-network
+      
   zookeeper:
     image: 'bitnami/zookeeper:latest'
     ports:
@@ -131,3 +145,4 @@ volumes:
     driver: local
   kafka-data:
     driver: local
+  grafana-volume:
