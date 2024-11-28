@@ -8,6 +8,7 @@ from sklearn.model_selection import RandomizedSearchCV, cross_val_score
 import joblib
 import xgboost as xgb
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
 from sklearn.utils import resample
 import time
 from sklearn.metrics import silhouette_score
@@ -153,6 +154,36 @@ print(f"Random Forest Cross-validation Accuracy: {cv_scores.mean():.4f} (+/- {cv
 
 joblib.dump(rf_selected, 'rf_model.pkl')
 print("Random Forest trained and saved!")
+
+# Naive Bayes
+print("Training Naive Bayes classifier")
+nb_model = GaussianNB()
+
+# Hyperparameter tuning for Naive Bayes
+param_grid_nb = {
+    'var_smoothing': [1e-9, 1e-8, 1e-7, 1e-6, 1e-5]  # Common hyperparameter for Naive Bayes
+}
+
+print("Naive Bayes Hyperparameter tuning...")
+random_search_nb = RandomizedSearchCV(
+    estimator=nb_model,
+    param_distributions=param_grid_nb,
+    n_iter=5,
+    scoring='accuracy',
+    cv=5
+)
+
+random_search_nb.fit(scaled_X, y)
+
+best_nb_model = random_search_nb.best_estimator_
+print("Best Naive Bayes model: ", best_nb_model)
+
+cv_scores_nb = cross_val_score(best_nb_model, scaled_X, y, cv=5, scoring='accuracy')
+print(f"Naive Bayes Cross-validation Accuracy: {cv_scores_nb.mean():.4f} (+/- {cv_scores_nb.std():.4f})")
+
+# Save the Naive Bayes model
+joblib.dump(best_nb_model, 'naive_bayes_model.pkl')
+print("Naive Bayes model trained and saved!")
 
 '''
     TO-DOs: it seems this files re-runs after it finishes and sometimes gets az APIException error 
