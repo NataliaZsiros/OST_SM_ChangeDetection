@@ -3,9 +3,12 @@ datasources:
   - name: InfluxDB
     type: influxdb
     access: proxy
-    database: db0
-    user: admin
-    password: admin
     url: http://influxdb:8086
     isDefault: true
     editable: true
+    jsonData:
+      version: Flux
+      organization: ChangeDetection_org 
+      defaultBucket: ChangeDetection    
+    secureJsonData:
+      token: 9FEx1XT4dRY-7H65r2ByRsz-XTlvaGlMN9itr9fMWxdw_K6TK7n7skk9p-wr55aZ3rf8sWnEZ24fSrwEd7V0qQ==
