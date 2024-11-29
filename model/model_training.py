@@ -4,6 +4,7 @@ from sklearn.cluster import KMeans
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
 from sklearn.model_selection import RandomizedSearchCV, cross_val_score
 import joblib
 import xgboost as xgb
@@ -131,6 +132,36 @@ cv_scores = cross_val_score(best_xgb_model, scaled_X, y, cv=5, scoring='accuracy
 print(f"XGBoost Cross-validation Accuracy: {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
 
 joblib.dump(xgb_model, 'xgb_model.pkl')
+
+#Supervised model - SVM
+print("SVM:")
+svm_model = SVC()
+
+param_grid = {
+    'C': [0.1, 1, 10],
+    'kernel': ['linear', 'rbf'],
+    'gamma': ['scale', 'auto']
+}
+
+print("Hyperparameter tuning...")
+svm_random_search = RandomizedSearchCV(
+    estimator=svm_model,
+    param_distributions=param_grid,
+    n_iter=50,  
+    scoring='accuracy',
+    cv=5,
+    random_state=0
+)
+
+svm_random_search.fit(scaled_X, y)
+best_svm_model = svm_random_search.best_estimator_
+print("Done: ", best_svm_model)
+
+cv_scores = cross_val_score(best_svm_model, scaled_X, y, cv=5, scoring='accuracy')
+print(f"SVM Cross-validation Accuracy: {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
+
+joblib.dump(svm_model, 'svm_model.pkl')
+print("SVM model trained and saved!")
 
 # Random Forest
 
