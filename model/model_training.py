@@ -107,6 +107,14 @@ labels = kmeans.fit(scaled_X)
 joblib.dump(kmeans, 'kmeans_model.pkl')
 print("KMeans trained and saved!")
 
+#PCA training for the Page-Hinkley algorithm in the stream pipeline
+print("PCA:")
+pca = PCA(n_components=1)
+reduced_X = pca.fit_transform(scaled_X)
+
+joblib.dump(pca, 'pca_model.pkl')
+print("PCA trained and saved!")
+
 #Supervised model - XGBoost
 print("XGBoost:")
 xgb_model = xgb.XGBClassifier()
@@ -311,13 +319,4 @@ Logistic regression Cross-validation F1 Score: 0.9850
 Logistic regression Cross-validation Precision: 0.9851
 Logistic regression Cross-validation Recall: 0.9850
 Logistic regression model trained and saved!
-'''
-
-'''
-    TO-DOs: it seems this files re-runs after it finishes and sometimes gets az APIException error 
-    which then leads to a KeyError when dropping the columns, however I am not sure but we should 
-    catch these errors and make the code wait for a bit
-
-    Questions for consultation:
-    - When are the python scripts re-ran by Docker?
 '''
