@@ -4,6 +4,7 @@ from pyspark.sql.types import StructType, StructField, StringType, DoubleType
 from pyspark.ml.linalg import Vectors, VectorUDT
 from menelaus.change_detection import PageHinkley
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType, IntegerType
+from pyspark.sql.functions import when, col, lit, avg
 import joblib
 import numpy as np
 import time
@@ -23,7 +24,7 @@ while True:
 
 print("PCA model is available")
 # Initialize Page-Hinkley Detector
-ph = PageHinkley(delta=0.01, threshold=15, direction="positive", burn_in=30)
+ph = PageHinkley(delta=0.001, threshold=1, direction="negative", burn_in=1)
 
 ###########################################################################
 #Functions
@@ -64,19 +65,6 @@ def apply_pca(features):
     return float(reduced[0][0])
 
 ###########################################################################
-
-# Define schema for incoming data
-'''data_columns = ['StartTime', 'LastTime', 'SrcAddr', 'DstAddr', 'Mean', 'Sport', 'Dport',
-       'SrcPkts', 'DstPkts', 'TotPkts', 'DstBytes', 'SrcBytes', 'TotBytes',
-       'SrcLoad', 'DstLoad', 'Load', 'SrcRate', 'DstRate', 'Rate', 'SrcLoss',
-       'DstLoss', 'Loss', 'pLoss', 'SrcJitter', 'DstJitter', 'SIntPkt',
-       'DIntPkt', 'Proto', 'Dur', 'TcpRtt', 'IdleTime', 'Sum', 'Min', 'Max',
-       'sDSb', 'sTtl', 'dTtl', 'sIpId', 'dIpId', 'SAppBytes', 'DAppBytes',
-       'TotAppByte', 'SynAck', 'RunTime', 'sTos', 'SrcJitAct', 'DstJitAct',
-       'Traffic', 'Target']
-
-columns = [(f"{i}", DoubleType()) for i in data_columns]
-schema = StructType([StructField(name, dtype) for name, dtype in columns])'''
 
 while True:
     try:
@@ -125,7 +113,8 @@ data_columns_only_float = [
 # Apply the mapping function to extract key-value pairs into separate columns
 parsed_stream = extract_key_value_columns(parsed_stream, data_columns)
 
-parsed_stream = parsed_stream.drop("StartTime", "LastTime", "SrcAddr", "DstAddr", "Traffic", "Target", "key_value_pairs", \
+# I did not delete the Target column for the estimation
+parsed_stream = parsed_stream.drop("StartTime", "LastTime", "SrcAddr", "DstAddr", "Traffic", "key_value_pairs", \
                                    "raw_value", 'sIpId', 'dIpId')
 
 # Add a current timestamp to each row
@@ -133,11 +122,9 @@ parsed_stream_with_timestamp = parsed_stream.withColumn("current_timestamp", cur
 
 vectorize_udf = udf(vectorize_features, VectorUDT())
 
-parsed_stream_with_timestamp.printSchema()
-
 vectorized_stream = parsed_stream_with_timestamp.withColumn(
     "features", vectorize_udf(*[col(f"{i}") for i in data_columns_only_float])
-).select("current_timestamp", "features")
+).select("current_timestamp", "features", "Target")
 
 pca_udf = udf(apply_pca, DoubleType())
 
@@ -153,11 +140,41 @@ stream_with_change_detection = reduced_stream.withColumn(
 
 stream_with_change_detection = stream_with_change_detection.drop("features")
 
+stream_with_metrics = stream_with_change_detection.withColumn(
+    "TP", when((col("change_detection") == "drift") & (col("Target") == 1), lit(1)).otherwise(lit(0))
+).withColumn(
+    "FP", when((col("change_detection") == "drift") & (col("Target") == 0), lit(1)).otherwise(lit(0))
+).withColumn(
+    "FN", when((col("change_detection").isNull()) & (col("Target") == 1), lit(1)).otherwise(lit(0))
+)
+
+stream_with_metrics.printSchema()
+
+# This doesn't work yet so I commented it
+'''metrics_aggregated = stream_with_metrics.groupBy().agg(
+    (when((sum(col("TP")) + sum(col("FP"))) > 0, sum(col("TP")) / (sum(col("TP")) + sum(col("FP")))).otherwise(0)).alias("Precision"),
+    (when((sum(col("TP")) + sum(col("FN"))) > 0, sum(col("TP")) / (sum(col("TP")) + sum(col("FN")))).otherwise(0)).alias("Recall"),
+    (
+        when(
+            ((sum(col("TP")) + sum(col("FP"))) > 0) & ((sum(col("TP")) + sum(col("FN"))) > 0),
+            2 * (sum(col("TP")) / (sum(col("TP")) + sum(col("FP")))) * (sum(col("TP")) / (sum(col("TP")) + sum(col("FN")))) /
+            ((sum(col("TP")) / (sum(col("TP")) + sum(col("FP")))) + (sum(col("TP")) / (sum(col("TP")) + sum(col("FN")))))
+        ).otherwise(0)
+    ).alias("F1_Score")
+)
+
+query_metrics = metrics_aggregated.writeStream \
+    .outputMode("complete") \
+    .format("console") \
+    .option("truncate", "false") \
+    .start()'''
+
 # Output the results to the console
-query = stream_with_change_detection.writeStream \
+query = stream_with_metrics.writeStream \
     .outputMode("append") \
     .format("console") \
     .option("truncate", "false") \
     .start()
 
 query.awaitTermination()
+#query_metrics.awaitTermination()

@@ -11,6 +11,7 @@ producer = Producer({'bootstrap.servers': broker})
 
 def send_data_to_kafka(file_path):
     df = pd.read_csv(file_path)
+    #df = df[df['SrcAddr'] == '192.168.0.20']
 
     for index, row in df.iterrows():
         message_value = ','.join([f"{key}={value}" for key, value in row.items()])
