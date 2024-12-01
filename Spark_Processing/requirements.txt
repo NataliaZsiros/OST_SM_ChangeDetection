@@ -1,3 +1,4 @@
 pyspark
-influxdb_client
+menelaus
+joblib
 numpy

@@ -117,13 +117,27 @@ services:
       - change-detection-network  
     #command: ["python", "/influxdb_save/saving_InfluxDB.py"]
 
+  stream_processing_pipeline: 
+    build:
+      context: ./Spark_Processing
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./Spark_Processing:/app/Spark_Processing
+      - ./model:/app/model   
+    working_dir: /app/Spark_Processing
+    #command: ["python", "/app/kafka_stream_processor.py"]
+    networks:
+      - change-detection-network
+
   pyspark:
     image: jupyter/pyspark-notebook:latest
     ports:
       - "8888:8888"
-    build: 
-      context: ./Spark_Processing
-      dockerfile: Dockerfile
     environment:
       - SPARK_MODE=master
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
