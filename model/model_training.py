@@ -16,6 +16,7 @@ from sklearn.utils import resample
 import time
 from sklearn.metrics import silhouette_score
 from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.decomposition import PCA
 
 url = "http://influxdb:8086"  
 token = "9FEx1XT4dRY-7H65r2ByRsz-XTlvaGlMN9itr9fMWxdw_K6TK7n7skk9p-wr55aZ3rf8sWnEZ24fSrwEd7V0qQ=="  
