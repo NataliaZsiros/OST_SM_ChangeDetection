@@ -83,6 +83,7 @@ y = df['Target']
 #Scaling X
 scaler = StandardScaler()
 scaled_X = scaler.fit_transform(X)
+print('Debug: ', X.columns)
 
 #Unsupervised model - KMeans
 
