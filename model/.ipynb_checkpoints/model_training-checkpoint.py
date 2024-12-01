@@ -16,7 +16,6 @@ from sklearn.utils import resample
 import time
 from sklearn.metrics import silhouette_score
 from sklearn.metrics import f1_score, precision_score, recall_score
-from sklearn.decomposition import PCA
 
 url = "http://influxdb:8086"  
 token = "9FEx1XT4dRY-7H65r2ByRsz-XTlvaGlMN9itr9fMWxdw_K6TK7n7skk9p-wr55aZ3rf8sWnEZ24fSrwEd7V0qQ=="  
@@ -83,7 +82,6 @@ y = df['Target']
 #Scaling X
 scaler = StandardScaler()
 scaled_X = scaler.fit_transform(X)
-print('Debug: ', X.columns)
 
 #Unsupervised model - KMeans
 
@@ -108,14 +106,6 @@ labels = kmeans.fit(scaled_X)
 
 joblib.dump(kmeans, 'kmeans_model.pkl')
 print("KMeans trained and saved!")
-
-#PCA training for the Page-Hinkley algorithm in the stream pipeline
-print("PCA:")
-pca = PCA(n_components=1)
-reduced_X = pca.fit_transform(scaled_X)
-
-joblib.dump(pca, 'pca_model.pkl')
-print("PCA trained and saved!")
 
 #Supervised model - XGBoost
 print("XGBoost:")
@@ -321,4 +311,13 @@ Logistic regression Cross-validation F1 Score: 0.9850
 Logistic regression Cross-validation Precision: 0.9851
 Logistic regression Cross-validation Recall: 0.9850
 Logistic regression model trained and saved!
+'''
+
+'''
+    TO-DOs: it seems this files re-runs after it finishes and sometimes gets az APIException error 
+    which then leads to a KeyError when dropping the columns, however I am not sure but we should 
+    catch these errors and make the code wait for a bit
+
+    Questions for consultation:
+    - When are the python scripts re-ran by Docker?
 '''
