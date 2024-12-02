@@ -134,6 +134,23 @@ services:
     networks:
       - change-detection-network
 
+  stream_statistical_analysis: 
+    build:
+      context: ./stream_statistics
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./stream_statistics:/app/stream_statistics
+      - ./model:/app/model   
+    working_dir: /app/stream_statistics
+    #command: ["python", "/app/kafka_stream_processor.py"]
+    networks:
+      - change-detection-network
+
   pyspark:
     image: bitnami/spark:3.3.0
     ports:
