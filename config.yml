@@ -135,7 +135,7 @@ services:
       - change-detection-network
 
   pyspark:
-    image: jupyter/pyspark-notebook:latest
+    image: bitnami/spark:3.3.0
     ports:
       - "8888:8888"
     environment:
@@ -149,7 +149,7 @@ services:
     depends_on:
       - kafka
       - influxdb
-    command: start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''
+    #command: start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''
     networks:
       - change-detection-network
 
