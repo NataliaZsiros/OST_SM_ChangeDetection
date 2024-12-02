@@ -117,9 +117,9 @@ services:
       - change-detection-network  
     #command: ["python", "/influxdb_save/saving_InfluxDB.py"]
 
-  stream_processing_pipeline: 
+  stream_change_detection_models: 
     build:
-      context: ./Spark_Processing
+      context: ./change_detection_models
       dockerfile: Dockerfile
     depends_on:
       - kafka
@@ -127,9 +127,9 @@ services:
     environment:
       - KAFKA_BROKER=kafka:9092
     volumes:
-      - ./Spark_Processing:/app/Spark_Processing
+      - ./change_detection_models:/app/change_detection_models
       - ./model:/app/model   
-    working_dir: /app/Spark_Processing
+    working_dir: /app/change_detection_models
     #command: ["python", "/app/kafka_stream_processor.py"]
     networks:
       - change-detection-network
