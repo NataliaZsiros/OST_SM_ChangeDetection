@@ -1,0 +1,6 @@
+pyspark
+menelaus
+joblib
+numpy
+influxdb_client
+pandas

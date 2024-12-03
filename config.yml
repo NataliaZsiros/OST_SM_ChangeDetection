@@ -32,7 +32,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
     networks:
       - change-detection-network
-      
+
   zookeeper:
     image: 'bitnami/zookeeper:latest'
     ports:
@@ -41,7 +41,7 @@ services:
       - ALLOW_ANONYMOUS_LOGIN=yes
     networks:
       - change-detection-network  
- 
+
   kafka:
     image: 'bitnami/kafka:latest'
     ports:
@@ -55,7 +55,6 @@ services:
       - zookeeper
     networks:
       - change-detection-network  
-      
 
   kafka_manager:
     image: hlebalbau/kafka-manager:stable
@@ -79,7 +78,6 @@ services:
       - KAFKA_BROKER=kafka:9092
     networks:
       - change-detection-network  
-    #command: ["python", "/data_stream/kafka_data_stream_conversion.py"]
 
   model_training:
     build:
@@ -96,7 +94,6 @@ services:
       - INFLUXDB_BUCKET=ChangeDetection
     networks:
       - change-detection-network  
-    #command: ["python", "/model/model_training.py"]
 
   saving_influxdb: 
     build:
@@ -115,9 +112,8 @@ services:
       - ./influxdb_save:/app 
     networks:
       - change-detection-network  
-    #command: ["python", "/influxdb_save/saving_InfluxDB.py"]
 
-  stream_change_detection_models: 
+  change_detection_models:
     build:
       context: ./change_detection_models
       dockerfile: Dockerfile
@@ -130,7 +126,22 @@ services:
       - ./change_detection_models:/app/change_detection_models
       - ./model:/app/model   
     working_dir: /app/change_detection_models
-    #command: ["python", "/app/kafka_stream_processor.py"]
+    networks:
+      - change-detection-network
+
+  eddm_model: 
+    build:
+      context: ./eddm_model
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./eddm_model:/app/eddm_model
+      - ./model:/app/model   
+    working_dir: /app/eddm_model
     networks:
       - change-detection-network
 
@@ -147,12 +158,12 @@ services:
       - ./stream_statistics:/app/stream_statistics
       - ./model:/app/model   
     working_dir: /app/stream_statistics
-    #command: ["python", "/app/kafka_stream_processor.py"]
     networks:
       - change-detection-network
 
   pyspark:
     image: bitnami/spark:3.3.0
+    platform: linux/amd64  # Force Docker to use the x86_64 version
     ports:
       - "8888:8888"
     environment:
@@ -166,7 +177,6 @@ services:
     depends_on:
       - kafka
       - influxdb
-    #command: start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''
     networks:
       - change-detection-network
 
