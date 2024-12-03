@@ -99,13 +99,13 @@ def write_to_influxdb(batch_df, batch_id):
     for index, row in batch_pd.iterrows():
         # Add here the additional change detection method results (if it detected change or not)
         # and add the calculated true positive, false positive and false negative values
-        point = Point("ChangeDetectionMethodResults") \
+        point = Point("PageHinkleyResults") \
             .field("reduced_dimension", row["reduced_dimension"]) \
-            .field("PH_TP", row["PH_TP"]) \
-            .field("PH_FP", row["PH_FP"]) \
-            .field("PH_FN", row["PH_FN"]) \
+            .field("TP", row["TP"]) \
+            .field("FP", row["FP"]) \
+            .field("FN", row["FN"]) \
             .field("target", row["Target"]) \
-            .tag("page_hinkley_result", row["page_hinkley_result"]) \
+            .tag("result", row["result"]) \
             .time(row["current_timestamp"], write_precision="ms")
         
         # Write the point to InfluxDB
@@ -182,18 +182,18 @@ reduced_stream = vectorized_stream.withColumn(
 change_detection_udf = udf(detect_change, StringType())
 
 stream_with_change_detection = reduced_stream.withColumn(
-    "page_hinkley_result", change_detection_udf(col("reduced_dimension"))
+    "result", change_detection_udf(col("reduced_dimension"))
 )
 
 stream_with_change_detection = stream_with_change_detection.drop("features")
 
 #Adding the True Positive, False Positive and False Negative values to the dataframe
 stream_with_metrics = stream_with_change_detection.withColumn(
-    "PH_TP", when((col("page_hinkley_result") == "drift") & (col("Target") == 1), lit(1)).otherwise(lit(0))
+    "TP", when((col("page_hinkley_result") == "drift") & (col("Target") == 1), lit(1)).otherwise(lit(0))
 ).withColumn(
-    "PH_FP", when((col("page_hinkley_result") == "drift") & (col("Target") == 0), lit(1)).otherwise(lit(0))
+    "FP", when((col("page_hinkley_result") == "drift") & (col("Target") == 0), lit(1)).otherwise(lit(0))
 ).withColumn(
-    "PH_FN", when((col("page_hinkley_result").isNull()) & (col("Target") == 1), lit(1)).otherwise(lit(0))
+    "FN", when((col("page_hinkley_result").isNull()) & (col("Target") == 1), lit(1)).otherwise(lit(0))
 )
 
 stream_with_metrics.printSchema()
