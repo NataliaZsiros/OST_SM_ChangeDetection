@@ -1,11 +1,26 @@
 import pandas as pd
 from confluent_kafka import Producer
+from confluent_kafka.admin import AdminClient, NewTopic
 import time
 
 pd.set_option('display.float_format', '{:.8f}'.format)
 
+def create_topic(broker, topic, num_partitions, replication_factor):
+    admin_client = AdminClient({'bootstrap.servers': broker})
+    topic_list = [NewTopic(topic, num_partitions=num_partitions, replication_factor=replication_factor)]
+    
+    futures = admin_client.create_topics(topic_list)
+    for topic, future in futures.items():
+        try:
+            future.result()  
+            print(f"Topic {topic} created successfully")
+        except Exception as e:
+            print(f"Failed to create topic {topic}: {e}")
+
 broker = 'kafka:9092' 
 topic = 'input'  
+
+create_topic(broker, topic, num_partitions=8, replication_factor=1)
 
 producer = Producer({'bootstrap.servers': broker})
 

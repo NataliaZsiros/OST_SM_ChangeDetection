@@ -1,16 +1,38 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, from_json, udf, current_timestamp, split, expr
-from pyspark.sql.types import StructType, StructField, StringType, DoubleType
+from pyspark.sql.functions import col, udf, current_timestamp, split, expr
+from pyspark.sql.types import StringType, DoubleType
 from pyspark.ml.linalg import Vectors, VectorUDT
 from menelaus.change_detection import PageHinkley
-from pyspark.sql.types import StructType, StructField, StringType, DoubleType, IntegerType
-from pyspark.sql.functions import when, col, lit, avg
+from pyspark.sql.types import StringType, DoubleType
+from pyspark.sql.functions import when, col, lit
+from influxdb_client import InfluxDBClient, Point
+from influxdb_client.client.write_api import SYNCHRONOUS
+from pyspark.sql.functions import to_json, struct
 import joblib
 import numpy as np
 import time
 
 print('Starting the script:')
 # Check if the PCA model has been trained in the batch processing part and the model is available
+
+url = "http://influxdb:8086"
+token = "9FEx1XT4dRY-7H65r2ByRsz-XTlvaGlMN9itr9fMWxdw_K6TK7n7skk9p-wr55aZ3rf8sWnEZ24fSrwEd7V0qQ=="  
+org = "ChangeDetection_org"
+bucket = "ChangeDetection"
+username = "admin"
+password = "password"
+
+print('Connecting to InfluxDB...')
+while True:
+    try:
+        client = InfluxDBClient(url=url, token=token, org=org)
+        print(client.ping())  # Test connection
+        break
+    except Exception as e:
+        print(f"Retrying InfluxDB connection... {e}")
+        time.sleep(5)
+
+write_api = client.write_api(write_options=SYNCHRONOUS)
 
 print('Trying to access the model...')
 while True:
@@ -23,6 +45,7 @@ while True:
         time.sleep(10)
 
 print("PCA model is available")
+
 # Initialize Page-Hinkley Detector
 ph = PageHinkley(delta=0.001, threshold=1, direction="negative", burn_in=1)
 
@@ -64,6 +87,30 @@ def apply_pca(features):
     reduced = pca_model.transform(array_features)
     return float(reduced[0][0])
 
+# Writing to InfluxDB for visualisation
+def write_to_influxdb(batch_df, batch_id):
+    """
+    Write a batch of data to InfluxDB.
+    """
+    # Convert the Spark DataFrame to Pandas 
+    batch_pd = batch_df.toPandas()
+    print(batch_pd.columns)
+    
+    for index, row in batch_pd.iterrows():
+        # Add here the additional change detection method results (if it detected change or not)
+        # and add the calculated true positive, false positive and false negative values
+        point = Point("PageHinkleyResults") \
+            .field("reduced_dimension", row["reduced_dimension"]) \
+            .field("TP", row["TP"]) \
+            .field("FP", row["FP"]) \
+            .field("FN", row["FN"]) \
+            .field("target", row["Target"]) \
+            .tag("result", row["result"]) \
+            .time(row["current_timestamp"], write_precision="ms")
+        
+        # Write the point to InfluxDB
+        write_api.write(bucket=bucket, org=org, record=point)
+
 ###########################################################################
 
 while True:
@@ -92,7 +139,7 @@ print("Connection is complete!")
 parsed_stream = kafka_stream.selectExpr("CAST(value AS STRING) as raw_value") \
     .withColumn("key_value_pairs", split(col("raw_value"), ","))  # Split by comma to get individual key-value pairs
 
-# List of keys to extract (match with the fields you care about)
+# List of keys to extract 
 data_columns = [
     "StartTime", "LastTime", "SrcAddr", "DstAddr", "Traffic", "Mean", "Sport", "Dport",
     "SrcPkts", "DstPkts", "TotPkts", "DstBytes", "SrcBytes", "TotBytes", "SrcLoad",
@@ -117,7 +164,7 @@ parsed_stream = extract_key_value_columns(parsed_stream, data_columns)
 parsed_stream = parsed_stream.drop("StartTime", "LastTime", "SrcAddr", "DstAddr", "Traffic", "key_value_pairs", \
                                    "raw_value", 'sIpId', 'dIpId')
 
-# Add a current timestamp to each row
+# Add a current timestamp to each row - kafka needs it somehow
 parsed_stream_with_timestamp = parsed_stream.withColumn("current_timestamp", current_timestamp())
 
 vectorize_udf = udf(vectorize_features, VectorUDT())
@@ -135,46 +182,28 @@ reduced_stream = vectorized_stream.withColumn(
 change_detection_udf = udf(detect_change, StringType())
 
 stream_with_change_detection = reduced_stream.withColumn(
-    "change_detection", change_detection_udf(col("reduced_dimension"))
+    "result", change_detection_udf(col("reduced_dimension"))
 )
 
 stream_with_change_detection = stream_with_change_detection.drop("features")
 
+#Adding the True Positive, False Positive and False Negative values to the dataframe
 stream_with_metrics = stream_with_change_detection.withColumn(
-    "TP", when((col("change_detection") == "drift") & (col("Target") == 1), lit(1)).otherwise(lit(0))
+    "TP", when((col("page_hinkley_result") == "drift") & (col("Target") == 1), lit(1)).otherwise(lit(0))
 ).withColumn(
-    "FP", when((col("change_detection") == "drift") & (col("Target") == 0), lit(1)).otherwise(lit(0))
+    "FP", when((col("page_hinkley_result") == "drift") & (col("Target") == 0), lit(1)).otherwise(lit(0))
 ).withColumn(
-    "FN", when((col("change_detection").isNull()) & (col("Target") == 1), lit(1)).otherwise(lit(0))
+    "FN", when((col("page_hinkley_result").isNull()) & (col("Target") == 1), lit(1)).otherwise(lit(0))
 )
 
 stream_with_metrics.printSchema()
 
-# This doesn't work yet so I commented it
-'''metrics_aggregated = stream_with_metrics.groupBy().agg(
-    (when((sum(col("TP")) + sum(col("FP"))) > 0, sum(col("TP")) / (sum(col("TP")) + sum(col("FP")))).otherwise(0)).alias("Precision"),
-    (when((sum(col("TP")) + sum(col("FN"))) > 0, sum(col("TP")) / (sum(col("TP")) + sum(col("FN")))).otherwise(0)).alias("Recall"),
-    (
-        when(
-            ((sum(col("TP")) + sum(col("FP"))) > 0) & ((sum(col("TP")) + sum(col("FN"))) > 0),
-            2 * (sum(col("TP")) / (sum(col("TP")) + sum(col("FP")))) * (sum(col("TP")) / (sum(col("TP")) + sum(col("FN")))) /
-            ((sum(col("TP")) / (sum(col("TP")) + sum(col("FP")))) + (sum(col("TP")) / (sum(col("TP")) + sum(col("FN")))))
-        ).otherwise(0)
-    ).alias("F1_Score")
-)
-
-query_metrics = metrics_aggregated.writeStream \
-    .outputMode("complete") \
-    .format("console") \
-    .option("truncate", "false") \
-    .start()'''
-
-# Output the results to the console
+#writing the results to the console and also writing it to influxdb
 query = stream_with_metrics.writeStream \
     .outputMode("append") \
     .format("console") \
     .option("truncate", "false") \
+    .foreachBatch(write_to_influxdb) \
     .start()
 
 query.awaitTermination()
-#query_metrics.awaitTermination()
