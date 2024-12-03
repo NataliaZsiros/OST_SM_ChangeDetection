@@ -10,7 +10,7 @@ import time
 # Load Logistic Regression Model
 while True:
     try:
-        logreg_model = joblib.load('/home/jovyan/work/model/logreg_model.pkl')
+        logreg_model = joblib.load('/app/model/logreg_model.pkl')
         break
     except Exception as e:
         print('Error loading logistic regression model:', e)

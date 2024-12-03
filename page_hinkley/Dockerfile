@@ -14,6 +14,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
-COPY batch_statistical_analysis.py /app/
+COPY page_hinkley.py /app/
 
-CMD ["python", "batch_statistical_analysis.py"]
+CMD ["python", "page_hinkley.py"]

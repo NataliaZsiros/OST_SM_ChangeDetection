@@ -45,6 +45,7 @@ while True:
         time.sleep(10)
 
 print("PCA model is available")
+
 # Initialize Page-Hinkley Detector
 ph = PageHinkley(delta=0.001, threshold=1, direction="negative", burn_in=1)
 

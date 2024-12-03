@@ -8,9 +8,10 @@ import numpy as np
 import time
 
 # Load SVM Model
+print('Loading the model...')
 while True:
     try:
-        svm_model = joblib.load('/home/jovyan/work/model/svm_model.pkl')
+        svm_model = joblib.load('/app/model/svm_model.pkl')
         break
     except Exception as e:
         print('Error loading SVM model:', e)

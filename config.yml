@@ -115,11 +115,10 @@ services:
       - ./influxdb_save:/app 
     networks:
       - change-detection-network  
-    #command: ["python", "/influxdb_save/saving_InfluxDB.py"]
 
-  stream_change_detection_models: 
+  page_hinkley: 
     build:
-      context: ./change_detection_models
+      context: ./page_hinkley
       dockerfile: Dockerfile
     depends_on:
       - kafka
@@ -127,10 +126,41 @@ services:
     environment:
       - KAFKA_BROKER=kafka:9092
     volumes:
-      - ./change_detection_models:/app/change_detection_models
+      - ./page_hinkley:/app/page_hinkley
       - ./model:/app/model   
-    working_dir: /app/change_detection_models
-    #command: ["python", "/app/kafka_stream_processor.py"]
+    working_dir: /app/page_hinkley
+    networks:
+      - change-detection-network
+
+  ddm: 
+    build:
+      context: ./ddm
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./ddm:/app/ddm
+      - ./model:/app/model   
+    working_dir: /app/ddm
+    networks:
+      - change-detection-network
+
+  adwin: 
+    build:
+      context: ./adwin
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./adwin:/app/adwin
+      - ./model:/app/model   
+    working_dir: /app/adwin
     networks:
       - change-detection-network
 
