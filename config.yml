@@ -113,11 +113,7 @@ services:
     networks:
       - change-detection-network  
 
-<<<<<<< HEAD
-  change_detection_models:
-=======
   page_hinkley: 
->>>>>>> 481545e7dbc66b2d78ab6ec3c49607a591f088f9
     build:
       context: ./page_hinkley
       dockerfile: Dockerfile
@@ -129,15 +125,6 @@ services:
     volumes:
       - ./page_hinkley:/app/page_hinkley
       - ./model:/app/model   
-<<<<<<< HEAD
-    working_dir: /app/change_detection_models
-    networks:
-      - change-detection-network
-
-  eddm_model: 
-    build:
-      context: ./eddm_model
-=======
     working_dir: /app/page_hinkley
     networks:
       - change-detection-network
@@ -145,7 +132,6 @@ services:
   ddm: 
     build:
       context: ./ddm
->>>>>>> 481545e7dbc66b2d78ab6ec3c49607a591f088f9
       dockerfile: Dockerfile
     depends_on:
       - kafka
@@ -153,11 +139,6 @@ services:
     environment:
       - KAFKA_BROKER=kafka:9092
     volumes:
-<<<<<<< HEAD
-      - ./eddm_model:/app/eddm_model
-      - ./model:/app/model   
-    working_dir: /app/eddm_model
-=======
       - ./ddm:/app/ddm
       - ./model:/app/model   
     working_dir: /app/ddm
@@ -177,7 +158,6 @@ services:
       - ./adwin:/app/adwin
       - ./model:/app/model   
     working_dir: /app/adwin
->>>>>>> 481545e7dbc66b2d78ab6ec3c49607a591f088f9
     networks:
       - change-detection-network
 
