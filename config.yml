@@ -89,7 +89,7 @@ services:
       - influxdb  
     environment:
       - INFLUXDB_URL=http://influxdb:8086  
-      - INFLUXDB_TOKEN=9FEx1XT4dRY-7H65r2ByRsz-XTlvaGlMN9itr9fMWxdw_K6TK7n7skk9p-wr55aZ3rf8sWnEZ24fSrwEd7V0qQ==  # InfluxDB token
+      - INFLUXDB_TOKEN=Ht9v0imQleHMiq1e-mb1E-Ci0dt3ANytCvuQZS3ZeYS3IbWvFXekPOOQjkGYLkjy8CTr0k6EzPdNM_BlOpQIEQ==  # InfluxDB token
       - INFLUXDB_ORG=ChangeDetection_org
       - INFLUXDB_BUCKET=ChangeDetection
     networks:
@@ -105,7 +105,7 @@ services:
     environment:
       - KAFKA_SERVER=kafka:9092
       - INFLUXDB_URL=http://influxdb:8086
-      - INFLUXDB_TOKEN=9FEx1XT4dRY-7H65r2ByRsz-XTlvaGlMN9itr9fMWxdw_K6TK7n7skk9p-wr55aZ3rf8sWnEZ24fSrwEd7V0qQ==
+      - INFLUXDB_TOKEN=Ht9v0imQleHMiq1e-mb1E-Ci0dt3ANytCvuQZS3ZeYS3IbWvFXekPOOQjkGYLkjy8CTr0k6EzPdNM_BlOpQIEQ==
       - INFLUXDB_ORG=ChangeDetection_org
       - INFLUXDB_BUCKET=ChangeDetection
     volumes:
@@ -158,6 +158,25 @@ services:
       - ./adwin:/app/adwin
       - ./model:/app/model   
     working_dir: /app/adwin
+<<<<<<< HEAD
+    networks:
+      - change-detection-network
+
+  ks:
+    build:
+      context: ./ks
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./ks:/app/ks
+      - ./model:/app/model   
+    working_dir: /app/ks
+=======
+>>>>>>> origin/main
     networks:
       - change-detection-network
 
