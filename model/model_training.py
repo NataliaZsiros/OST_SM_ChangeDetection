@@ -76,6 +76,7 @@ print('Columns: ', df.columns)
 
 #Dropping these columns as they are either influxdb generated or unique values and would undermine ML training 
 df.drop(columns=['table', 'result', '_time', '_measurement', '_stop', '_start', 'StartTime', 'LastTime', 'SrcAddr', 'DstAddr', 'sIpId', 'dIpId'], inplace=True)
+df.drop_duplicates(inplace=True)
 
 X = df.drop(columns=['Traffic', 'Target'])
 y = df['Target']
@@ -91,12 +92,13 @@ print('Debug: ', X.columns)
 best_score = -1
 optimal_k = 1
 
-sample_data = resample(scaled_X, n_samples=int(0.15 * len(scaled_X)), random_state=42)
+#sample_data = resample(scaled_X, n_samples=int(0.15 * len(scaled_X)), random_state=42)
+#print(len(sample_data))
 
 for k in range(2, 11):
     kmeans = KMeans(n_clusters=k, random_state=42)
-    kmeans.fit(sample_data)
-    score = silhouette_score(sample_data, kmeans.labels_)
+    kmeans.fit(scaled_X)
+    score = silhouette_score(scaled_X, kmeans.labels_)
     if score > best_score:
         best_score = score
         optimal_k = k

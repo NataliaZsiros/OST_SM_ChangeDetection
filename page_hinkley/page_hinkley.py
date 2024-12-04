@@ -189,11 +189,11 @@ stream_with_change_detection = stream_with_change_detection.drop("features")
 
 #Adding the True Positive, False Positive and False Negative values to the dataframe
 stream_with_metrics = stream_with_change_detection.withColumn(
-    "TP", when((col("page_hinkley_result") == "drift") & (col("Target") == 1), lit(1)).otherwise(lit(0))
+    "TP", when((col("result") == "drift") & (col("Target") == 1), lit(1)).otherwise(lit(0))
 ).withColumn(
-    "FP", when((col("page_hinkley_result") == "drift") & (col("Target") == 0), lit(1)).otherwise(lit(0))
+    "FP", when((col("result") == "drift") & (col("Target") == 0), lit(1)).otherwise(lit(0))
 ).withColumn(
-    "FN", when((col("page_hinkley_result").isNull()) & (col("Target") == 1), lit(1)).otherwise(lit(0))
+    "FN", when((col("result").isNull()) & (col("Target") == 1), lit(1)).otherwise(lit(0))
 )
 
 stream_with_metrics.printSchema()
