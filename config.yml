@@ -158,6 +158,7 @@ services:
       - ./adwin:/app/adwin
       - ./model:/app/model   
     working_dir: /app/adwin
+<<<<<<< HEAD
     networks:
       - change-detection-network
 
@@ -174,6 +175,8 @@ services:
       - ./ks:/app/ks
       - ./model:/app/model   
     working_dir: /app/ks
+=======
+>>>>>>> origin/main
     networks:
       - change-detection-network
 
