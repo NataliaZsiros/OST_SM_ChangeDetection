@@ -19,7 +19,7 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 from sklearn.decomposition import PCA
 
 url = "http://influxdb:8086"  
-token = "9FEx1XT4dRY-7H65r2ByRsz-XTlvaGlMN9itr9fMWxdw_K6TK7n7skk9p-wr55aZ3rf8sWnEZ24fSrwEd7V0qQ=="  
+token = "Ht9v0imQleHMiq1e-mb1E-Ci0dt3ANytCvuQZS3ZeYS3IbWvFXekPOOQjkGYLkjy8CTr0k6EzPdNM_BlOpQIEQ=="  
 org = "ChangeDetection_org"      
 bucket = "ChangeDetection" 
 username = "admin"
@@ -57,7 +57,7 @@ df = pd.DataFrame(data)
 print("Data loaded:")
 print(df.head())
 
-if df.empty:
+while df.empty:
     print("Dataframe empty. Waiting 10 mins...")
     time.sleep(600) #wait 10 minutes to gather some data from the stream
     print("Time elapsed.")
@@ -197,6 +197,7 @@ cv_scores = cross_val_score(rf_selected, X_selected, y, cv=5)
 print(f"Random Forest Cross-validation Accuracy: {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
 
 joblib.dump(rf_selected, 'rf_model.pkl')
+joblib.dump(selected_features, 'rf_features.pkl')
 print("Random Forest trained and saved!")
 
 # Naive Bayes
