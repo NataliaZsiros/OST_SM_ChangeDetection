@@ -146,7 +146,7 @@ print("Done: ", best_xgb_model)
 cv_scores = cross_val_score(best_xgb_model, scaled_X, y, cv=5, scoring='accuracy')
 print(f"XGBoost Cross-validation Accuracy: {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
 
-joblib.dump(xgb_model, 'xgb_model.pkl')
+joblib.dump(best_xgb_model, 'xgb_model.pkl')
 
 #Supervised model - SVM
 print("SVM:")
@@ -175,7 +175,7 @@ print("Done: ", best_svm_model)
 cv_scores = cross_val_score(best_svm_model, scaled_X, y, cv=5, scoring='accuracy')
 print(f"SVM Cross-validation Accuracy: {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
 
-joblib.dump(svm_model, 'svm_model.pkl')
+joblib.dump(best_svm_model, 'svm_model.pkl')
 print("SVM model trained and saved!")
 
 # Random Forest

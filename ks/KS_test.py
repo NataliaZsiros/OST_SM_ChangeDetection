@@ -30,11 +30,11 @@ while True:
 
 write_api = client.write_api(write_options=SYNCHRONOUS)
 
-# Load the pre-trained Random Forest model
-print("Loading the Random Forest model...")
-rf_model = joblib.load('/app/model/random_forest_model.pkl')
+print('Loading the Random Forest model...')
+
+rf_model = joblib.load('/app/model/rf_model.pkl')
 rf_features = joblib.load('/app/model/rf_features.pkl')
-print("Random Forest Model loaded successfully!")
+
 
 ###########################################################################
 # Functions
@@ -78,7 +78,7 @@ def write_to_influxdb(batch_df, batch_id):
     for index, row in batch_pd.iterrows():
         # Add here the additional change detection method results (if it detected change or not)
         # and add the calculated true positive, false positive and false negative values
-        point = Point("PageHinkleyResults") \
+        point = Point("KSResults") \
             .field("reduced_dimension", row["reduced_dimension"]) \
             .field("TP", row["TP"]) \
             .field("FP", row["FP"]) \
@@ -156,15 +156,15 @@ change_detection_udf = udf(
 )
 
 stream_with_change_detection = predicted_stream.withColumn(
-    "ks_test_result", change_detection_udf(col("error"))
+    "result", change_detection_udf(col("error"))
 )
 
 stream_with_change_detection = stream_with_change_detection.withColumn(
-    "ks_test_result", when(col("ks_test_result").isNull(), "no_drift").otherwise(col("ks_test_result"))
+    "result", when(col("result").isNull(), "no_drift").otherwise(col("result"))
 )
 
 stream_with_metrics = stream_with_change_detection.select(
-    "current_timestamp", "Target", "prediction", "error", "ks_test_result"
+    "current_timestamp", "Target", "prediction", "error", "result"
 )
 
 stream_with_metrics.printSchema()

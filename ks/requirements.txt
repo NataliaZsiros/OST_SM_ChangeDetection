@@ -4,3 +4,4 @@ numpy
 influxdb_client
 pandas
 scipy
+scikit-learn

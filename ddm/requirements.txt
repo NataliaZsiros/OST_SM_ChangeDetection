@@ -4,3 +4,4 @@ joblib
 numpy
 influxdb_client
 pandas
+scikit-learn

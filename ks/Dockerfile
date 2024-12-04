@@ -14,6 +14,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
-COPY ks_test.py /app/
+COPY KS_test.py /app/
 
-CMD ["python", "ks_test.py"]
+CMD ["python", "KS_test.py"]

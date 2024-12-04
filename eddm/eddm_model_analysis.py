@@ -13,8 +13,17 @@ print('Starting the script...')
 eddm = EDDM(warning_thresh=0.95, drift_thresh=0.9)
 
 # Load the pre-trained Logistic regression model
+
 print("Loading the Logistic regression model...")
-logreg_model = joblib.load('/app/model/logreg_model.pkl')
+while True:
+    try:
+        logreg_model = joblib.load('/app/model/logreg_model.pkl')
+        break
+    except Exception as e:
+        print('Error: ', e)
+        print('Waiting 10 seconds...')
+        time.sleep(10)
+
 print("Model loaded successfully!")
 
 ###########################################################################

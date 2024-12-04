@@ -158,7 +158,6 @@ services:
       - ./adwin:/app/adwin
       - ./model:/app/model   
     working_dir: /app/adwin
-<<<<<<< HEAD
     networks:
       - change-detection-network
 
@@ -175,8 +174,22 @@ services:
       - ./ks:/app/ks
       - ./model:/app/model   
     working_dir: /app/ks
-=======
->>>>>>> origin/main
+    networks:
+      - change-detection-network
+
+  eddm:
+    build:
+      context: ./eddm
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./eddm:/app/eddm
+      - ./model:/app/model   
+    working_dir: /app/eddm
     networks:
       - change-detection-network
 
