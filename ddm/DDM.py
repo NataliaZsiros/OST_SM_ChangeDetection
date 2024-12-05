@@ -8,9 +8,10 @@ import numpy as np
 import time
 
 # Load SVM Model
+print('Loading the model...')
 while True:
     try:
-        svm_model = joblib.load('/home/jovyan/work/model/svm_model.pkl')
+        svm_model = joblib.load('/app/model/svm_model.pkl')
         break
     except Exception as e:
         print('Error loading SVM model:', e)
@@ -95,7 +96,7 @@ prediction_udf = udf(make_prediction, DoubleType())
 predicted_stream = vectorized_stream.withColumn("prediction", prediction_udf(col("features")))
 
 # Calculate prediction error
-predicted_stream = predicted_stream.withColumn("error", col("prediction").cast(DoubleType()))
+predicted_stream = predicted_stream.withColumn("error", (col("prediction")).cast(DoubleType()))
 
 # Apply DDM change detection
 ddm_udf = udf(detect_ddm_change, StringType())
