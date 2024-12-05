@@ -1,7 +1,0 @@
-pyspark
-river
-joblib
-numpy
-influxdb_client
-pandas
-scikit-learn

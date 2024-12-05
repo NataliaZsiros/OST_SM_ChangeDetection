@@ -1,4 +1,0 @@
-pyspark
-joblib
-numpy
-pandas

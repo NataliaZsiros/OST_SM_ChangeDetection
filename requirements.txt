@@ -1,0 +1,13 @@
+pyspark
+menelaus
+joblib
+numpy
+influxdb_client
+pandas
+kafka-python
+confluent_kafka
+scikit-learn
+xgboost
+river
+scipy
+imblearn

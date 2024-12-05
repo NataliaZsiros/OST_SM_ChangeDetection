@@ -4,10 +4,31 @@ from pyspark.sql.functions import col, from_json, udf, current_timestamp, split,
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType, IntegerType
 from pyspark.ml.linalg import Vectors, VectorUDT
 from menelaus.concept_drift import EDDM
+from influxdb_client import InfluxDBClient, Point
+from influxdb_client.client.write_api import SYNCHRONOUS
 import numpy as np
 import time
 
 print('Starting the script...')
+
+url = "http://influxdb:8086"
+token = "9FEx1XT4dRY-7H65r2ByRsz-XTlvaGlMN9itr9fMWxdw_K6TK7n7skk9p-wr55aZ3rf8sWnEZ24fSrwEd7V0qQ=="  
+org = "ChangeDetection_org"
+bucket = "ChangeDetection"
+username = "admin"
+password = "password"
+
+print('Connecting to InfluxDB...')
+while True:
+    try:
+        client = InfluxDBClient(url=url, token=token, org=org)
+        print(client.ping())  # Test connection
+        break
+    except Exception as e:
+        print(f"Retrying InfluxDB connection... {e}")
+        time.sleep(5)
+
+write_api = client.write_api(write_options=SYNCHRONOUS)
 
 # Initialize EDDM Detector
 eddm = EDDM(warning_thresh=0.95, drift_thresh=0.9)
@@ -59,6 +80,30 @@ def detect_change(y_true, y_pred):
     # EDDM expects a sequence of true and predicted values; it's meant to be updated in an ongoing fashion
     eddm.update(y_true, y_pred)
     return eddm.drift_state  # Outputs: 'drift', 'warning', or 'no_drift'
+
+# Writing to InfluxDB for visualisation
+def write_to_influxdb(batch_df, batch_id):
+    """
+    Write a batch of data to InfluxDB.
+    """
+    # Convert the Spark DataFrame to Pandas 
+    batch_pd = batch_df.toPandas()
+    print(batch_pd.columns)
+    
+    for index, row in batch_pd.iterrows():
+        # Add here the additional change detection method results (if it detected change or not)
+        # and add the calculated true positive, false positive and false negative values
+        point = Point("EDDMResults") \
+            .field("reduced_dimension", row["reduced_dimension"]) \
+            .field("TP", row["TP"]) \
+            .field("FP", row["FP"]) \
+            .field("FN", row["FN"]) \
+            .field("target", row["Target"]) \
+            .tag("result", row["result"]) \
+            .time(row["current_timestamp"], write_precision="ms")
+        
+        # Write the point to InfluxDB
+        write_api.write(bucket=bucket, org=org, record=point)
 
 ###########################################################################
 

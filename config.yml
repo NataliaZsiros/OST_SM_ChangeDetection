@@ -113,6 +113,12 @@ services:
     networks:
       - change-detection-network  
 
+  local_base:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: local_base
+
   page_hinkley: 
     build:
       context: ./page_hinkley
@@ -206,6 +212,23 @@ services:
       - ./stream_statistics:/app/stream_statistics
       - ./model:/app/model   
     working_dir: /app/stream_statistics
+    networks:
+      - change-detection-network
+
+  stream_window_statistical_analysis: 
+    build:
+      context: ./stream_window_statisitcs
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+      - local_base
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./stream_window_statisitcs:/app/stream_window_statisitcs
+      - ./model:/app/model   
+    working_dir: /app/stream_window_statisitcs
     networks:
       - change-detection-network
 
