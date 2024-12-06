@@ -60,11 +60,9 @@ def predict_rf(features):
     features_array = np.array(features.toArray()).reshape(1, -1)
     return float(rf_model.predict(features_array)[0])
 
-def detect_stepd_change(error_value):
-    score = stepd.update(error_value)
-    if score > 0.5:
-        return "drift"
-    return "no_drift"
+def detect_stepd_change(y_true, y_pred):
+    stepd.update(y_true, y_pred)
+    return stepd.drift_state
 
 # Writing to InfluxDB for visualisation
 def write_to_influxdb(batch_df, batch_id):
@@ -78,8 +76,8 @@ def write_to_influxdb(batch_df, batch_id):
     for index, row in batch_pd.iterrows():
         # Add here the additional change detection method results (if it detected change or not)
         # and add the calculated true positive, false positive and false negative values
-        point = Point("KSResults") \
-            .field("reduced_dimension", row["reduced_dimension"]) \
+        point = Point("STEPDResults") \
+            .field("prediction", row["prediction"]) \
             .field("TP", row["TP"]) \
             .field("FP", row["FP"]) \
             .field("FN", row["FN"]) \
@@ -146,15 +144,15 @@ predicted_stream = vectorized_stream.withColumn(
     "prediction", predict_udf(col("features"))
 )
 
-predicted_stream = predicted_stream.withColumn(
-    "error", expr("abs(Target - prediction)")
-)
+# predicted_stream = predicted_stream.withColumn(
+#     "error", expr("abs(Target - prediction)")
+# )
 
 stepd_udf = udf(detect_stepd_change, StringType())
 
 # Apply the STEPD change detection
 stream_with_change_detection = predicted_stream.withColumn(
-    "result", stepd_udf(col("error"))
+    "result", stepd_udf(col("Target"), col("prediction"))
 )
 
 stream_with_change_detection = stream_with_change_detection.withColumn(
