@@ -78,8 +78,9 @@ def write_to_influxdb(batch_df, batch_id):
     for index, row in batch_pd.iterrows():
         # Add here the additional change detection method results (if it detected change or not)
         # and add the calculated true positive, false positive and false negative values
-        point = Point("KSResults") \
-            .field("reduced_dimension", row["reduced_dimension"]) \
+        point = Point("STEPDResults") \
+            .field("error", row["error"]) \
+            .field("prediction", row["prediction"]) \
             .field("TP", row["TP"]) \
             .field("FP", row["FP"]) \
             .field("FN", row["FN"]) \
