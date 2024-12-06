@@ -190,6 +190,7 @@ services:
     depends_on:
       - kafka
       - pyspark
+      - local_base
     environment:
       - KAFKA_BROKER=kafka:9092
     volumes:
@@ -250,7 +251,7 @@ services:
 
   pyspark:
     image: bitnami/spark:3.3.0
-    platform: linux/amd64  # Force Docker to use the x86_64 version
+    # platform: linux/amd64  # Force Docker to use the x86_64 version
     ports:
       - "8888:8888"
     environment:
