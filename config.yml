@@ -119,101 +119,101 @@ services:
       dockerfile: Dockerfile
     image: local_base
 
-  # page_hinkley: 
-  #   build:
-  #     context: ./page_hinkley
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     - kafka
-  #     - pyspark
-  #   environment:
-  #     - KAFKA_BROKER=kafka:9092
-  #   volumes:
-  #     - ./page_hinkley:/app/page_hinkley
-  #     - ./model:/app/model   
-  #   working_dir: /app/page_hinkley
-  #   networks:
-  #     - change-detection-network
+  page_hinkley: 
+    build:
+      context: ./page_hinkley
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./page_hinkley:/app/page_hinkley
+      - ./model:/app/model   
+    working_dir: /app/page_hinkley
+    networks:
+      - change-detection-network
 
-  # ddm: 
-  #   build:
-  #     context: ./ddm
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     - kafka
-  #     - pyspark
-  #   environment:
-  #     - KAFKA_BROKER=kafka:9092
-  #   volumes:
-  #     - ./ddm:/app/ddm
-  #     - ./model:/app/model   
-  #   working_dir: /app/ddm
-  #   networks:
-  #     - change-detection-network
+  ddm: 
+    build:
+      context: ./ddm
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./ddm:/app/ddm
+      - ./model:/app/model   
+    working_dir: /app/ddm
+    networks:
+      - change-detection-network
 
-  # adwin: 
-  #   build:
-  #     context: ./adwin
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     - kafka
-  #     - pyspark
-  #   environment:
-  #     - KAFKA_BROKER=kafka:9092
-  #   volumes:
-  #     - ./adwin:/app/adwin
-  #     - ./model:/app/model   
-  #   working_dir: /app/adwin
-  #   networks:
-  #     - change-detection-network
+  adwin: 
+    build:
+      context: ./adwin
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./adwin:/app/adwin
+      - ./model:/app/model   
+    working_dir: /app/adwin
+    networks:
+      - change-detection-network
 
-  # ks:
-  #   build:
-  #     context: ./ks
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     - kafka
-  #     - pyspark
-  #   environment:
-  #     - KAFKA_BROKER=kafka:9092
-  #   volumes:
-  #     - ./ks:/app/ks
-  #     - ./model:/app/model   
-  #   working_dir: /app/ks
-  #   networks:
-  #     - change-detection-network
+  ks:
+    build:
+      context: ./ks
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./ks:/app/ks
+      - ./model:/app/model   
+    working_dir: /app/ks
+    networks:
+      - change-detection-network
 
-  # eddm:
-  #   build:
-  #     context: ./eddm
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     - kafka
-  #     - pyspark
-  #   environment:
-  #     - KAFKA_BROKER=kafka:9092
-  #   volumes:
-  #     - ./eddm:/app/eddm
-  #     - ./model:/app/model   
-  #   working_dir: /app/eddm
-  #   networks:
-  #     - change-detection-network
+  eddm:
+    build:
+      context: ./eddm
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./eddm:/app/eddm
+      - ./model:/app/model   
+    working_dir: /app/eddm
+    networks:
+      - change-detection-network
 
-  # stream_statistical_analysis: 
-  #   build:
-  #     context: ./stream_statistics
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     - kafka
-  #     - pyspark
-  #   environment:
-  #     - KAFKA_BROKER=kafka:9092
-  #   volumes:
-  #     - ./stream_statistics:/app/stream_statistics
-  #     - ./model:/app/model   
-  #   working_dir: /app/stream_statistics
-  #   networks:
-  #     - change-detection-network
+  stream_statistical_analysis: 
+    build:
+      context: ./stream_statistics
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./stream_statistics:/app/stream_statistics
+      - ./model:/app/model   
+    working_dir: /app/stream_statistics
+    networks:
+      - change-detection-network
 
   # stream_window_statistical_analysis: 
   #   build:

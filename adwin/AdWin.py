@@ -3,6 +3,9 @@ from pyspark.sql.functions import col, udf, current_timestamp, split, expr
 from pyspark.sql.types import StringType, DoubleType
 from pyspark.ml.linalg import Vectors, VectorUDT
 from menelaus.change_detection import ADWIN
+from pyspark.sql.functions import when, col, lit
+from influxdb_client import InfluxDBClient, Point
+from influxdb_client.client.write_api import SYNCHRONOUS
 import joblib
 import numpy as np
 import time
@@ -15,6 +18,25 @@ while True:
     except Exception as e:
         print('Error loading logistic regression model:', e)
         time.sleep(10)
+
+url = "http://influxdb:8086"
+token = "9FEx1XT4dRY-7H65r2ByRsz-XTlvaGlMN9itr9fMWxdw_K6TK7n7skk9p-wr55aZ3rf8sWnEZ24fSrwEd7V0qQ=="  
+org = "ChangeDetection_org"
+bucket = "ChangeDetection"
+username = "admin"
+password = "password"
+
+print('Connecting to InfluxDB...')
+while True:
+    try:
+        client = InfluxDBClient(url=url, token=token, org=org)
+        print(client.ping())  # Test connection
+        break
+    except Exception as e:
+        print(f"Retrying InfluxDB connection... {e}")
+        time.sleep(5)
+
+write_api = client.write_api(write_options=SYNCHRONOUS)
 
 # Initialize ADWIN Detector
 adwin = ADWIN(delta=0.001) 
@@ -37,6 +59,30 @@ def make_prediction(features):
     features_array = np.array(features.toArray()).reshape(1, -1)
     prediction = logreg_model.predict(features_array)
     return float(prediction)
+
+def write_to_influxdb(batch_df, batch_id):
+    """
+    Write a batch of data to InfluxDB.
+    """
+    # Convert the Spark DataFrame to Pandas 
+    batch_pd = batch_df.toPandas()
+    print(batch_pd.columns)
+    
+    for index, row in batch_pd.iterrows():
+        # Add here the additional change detection method results (if it detected change or not)
+        # and add the calculated true positive, false positive and false negative values
+        point = Point("ADWINResults") \
+            .field("error", row["error"]) \
+            .field("prediction", row["prediction"]) \
+            .field("TP", row["TP"]) \
+            .field("FP", row["FP"]) \
+            .field("FN", row["FN"]) \
+            .field("target", row["Target"]) \
+            .tag("result", row["result"]) \
+            .time(row["current_timestamp"], write_precision="ms")
+        
+        # Write the point to InfluxDB
+        write_api.write(bucket=bucket, org=org, record=point)
 
 ###########################################################################
 # Spark Streaming
@@ -96,16 +142,28 @@ predicted_stream = predicted_stream.withColumn("error", (col("prediction") - col
 # Apply Menelaus ADWIN change detection
 adwin_udf = udf(detect_adwin_change, StringType())
 stream_with_change_detection = predicted_stream.withColumn(
-    "adwin_result", adwin_udf(col("error"))
+    "result", adwin_udf(col("error"))
 )
 
 stream_with_change_detection = stream_with_change_detection.drop("features")
 
-# Output to console
-query = stream_with_change_detection.writeStream \
+#Adding the True Positive, False Positive and False Negative values to the dataframe
+stream_with_metrics = stream_with_change_detection.withColumn(
+    "TP", when((col("result") == "drift") & (col("Target") == 1), lit(1)).otherwise(lit(0))
+).withColumn(
+    "FP", when((col("result") == "drift") & (col("Target") == 0), lit(1)).otherwise(lit(0))
+).withColumn(
+    "FN", when((col("result") == "no_drift") & (col("Target") == 1), lit(1)).otherwise(lit(0))
+)
+
+stream_with_metrics.printSchema()
+
+#writing the results to the console and also writing it to influxdb
+query = stream_with_metrics.writeStream \
     .outputMode("append") \
     .format("console") \
     .option("truncate", "false") \
+    .foreachBatch(write_to_influxdb) \
     .start()
 
 query.awaitTermination()

@@ -94,7 +94,8 @@ def write_to_influxdb(batch_df, batch_id):
         # Add here the additional change detection method results (if it detected change or not)
         # and add the calculated true positive, false positive and false negative values
         point = Point("EDDMResults") \
-            .field("reduced_dimension", row["reduced_dimension"]) \
+            .field("error", row["error"]) \
+            .field("prediction", row["prediction"]) \
             .field("TP", row["TP"]) \
             .field("FP", row["FP"]) \
             .field("FN", row["FN"]) \
@@ -183,26 +184,34 @@ predicted_stream = predicted_stream.withColumn(
 change_detection_udf = udf(lambda y_true, y_pred: detect_change(y_true, y_pred), StringType())
 
 stream_with_change_detection = predicted_stream.withColumn(
-    "eddm_result", change_detection_udf(col("Target"), col("prediction"))
+    "result", change_detection_udf(col("Target"), col("prediction"))
 )
 
 
 stream_with_change_detection = stream_with_change_detection.withColumn(
-    "eddm_result", when(col("eddm_result").isNull(), "no_drift").otherwise(col("eddm_result"))
+    "result", when(col("result").isNull(), "no_drift").otherwise(col("result"))
 )
 
 # Display schema
 stream_with_metrics = stream_with_change_detection.select(
-    "current_timestamp", "Target", "prediction", "error", "eddm_result"
+    "current_timestamp", "Target", "prediction", "error", "result"
 )
 
-stream_with_metrics.printSchema()
+#Adding the True Positive, False Positive and False Negative values to the dataframe
+stream_with_metrics = stream_with_change_detection.withColumn(
+    "TP", when((col("result") == "drift") & (col("Target") == 1), lit(1)).otherwise(lit(0))
+).withColumn(
+    "FP", when((col("result") == "drift") & (col("Target") == 0), lit(1)).otherwise(lit(0))
+).withColumn(
+    "FN", when((col("result") == "no_drift") & (col("Target") == 1), lit(1)).otherwise(lit(0))
+)
 
 # Output the results to the console
 query = stream_with_metrics.writeStream \
     .outputMode("append") \
     .format("console") \
     .option("truncate", "false") \
+    .foreachBatch(write_to_influxdb) \
     .start()
 
 query.awaitTermination()

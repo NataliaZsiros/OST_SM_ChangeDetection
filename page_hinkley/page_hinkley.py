@@ -203,7 +203,7 @@ query = stream_with_metrics.writeStream \
     .outputMode("append") \
     .format("console") \
     .option("truncate", "false") \
-    .foreachBatch(write_to_influxdb) \
     .start()
+    #.foreachBatch(write_to_influxdb) \
 
 query.awaitTermination()

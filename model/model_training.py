@@ -83,7 +83,7 @@ y = df['Target']
 #Scaling X
 scaler = StandardScaler()
 scaled_X = scaler.fit_transform(X)
-print('Debug: ', X.columns)
+print('Debug: ', scaled_X)
 
 #Unsupervised model - KMeans
 
@@ -93,6 +93,7 @@ optimal_k = 1
 
 #sample_data = resample(scaled_X, n_samples=int(0.15 * len(scaled_X)), random_state=42)
 #print(len(sample_data))
+
 
 for k in range(2, 11):
     kmeans = KMeans(n_clusters=k, random_state=42)
@@ -104,7 +105,7 @@ for k in range(2, 11):
 print('Number of clusters: ', k)
 
 print("Training KMeans")
-kmeans = KMeans(n_clusters=k, random_state=42)  
+kmeans = KMeans(n_clusters=optimal_k, random_state=42)  
 labels = kmeans.fit(scaled_X)
 
 joblib.dump(kmeans, 'kmeans_model.pkl')
