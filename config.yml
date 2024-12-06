@@ -135,6 +135,22 @@ services:
     networks:
       - change-detection-network
 
+  page_hinkley_batch: #just for experimentation
+    build:
+      context: ./page_hinkley_batch
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./page_hinkley_batch:/app/page_hinkley_batch
+      - ./model:/app/model   
+    working_dir: /app/page_hinkley_batch
+    networks:
+      - change-detection-network
+
   ddm: 
     build:
       context: ./ddm
@@ -215,22 +231,22 @@ services:
     networks:
       - change-detection-network
 
-  # stream_window_statistical_analysis: 
-  #   build:
-  #     context: ./stream_window_statisitcs
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     - kafka
-  #     - pyspark
-  #     - local_base
-  #   environment:
-  #     - KAFKA_BROKER=kafka:9092
-  #   volumes:
-  #     - ./stream_window_statisitcs:/app/stream_window_statisitcs
-  #     - ./model:/app/model   
-  #   working_dir: /app/stream_window_statisitcs
-  #   networks:
-  #     - change-detection-network
+  stream_window_statistical_analysis: 
+    build:
+      context: ./stream_window_statisitcs
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - pyspark
+      - local_base
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./stream_window_statisitcs:/app/stream_window_statisitcs
+      - ./model:/app/model   
+    working_dir: /app/stream_window_statisitcs
+    networks:
+      - change-detection-network
 
   pyspark:
     image: bitnami/spark:3.3.0

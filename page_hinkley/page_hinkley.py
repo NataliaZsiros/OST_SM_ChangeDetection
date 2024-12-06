@@ -100,7 +100,7 @@ def write_to_influxdb(batch_df, batch_id):
         # Add here the additional change detection method results (if it detected change or not)
         # and add the calculated true positive, false positive and false negative values
         point = Point("PageHinkleyResults") \
-            .field("reduced_dimension", row["reduced_dimension"]) \
+            .field("DstJitter", row["DstJitter"]) \
             .field("TP", row["TP"]) \
             .field("FP", row["FP"]) \
             .field("FN", row["FN"]) \
@@ -140,15 +140,7 @@ parsed_stream = kafka_stream.selectExpr("CAST(value AS STRING) as raw_value") \
     .withColumn("key_value_pairs", split(col("raw_value"), ","))  # Split by comma to get individual key-value pairs
 
 # List of keys to extract 
-data_columns = [
-    "StartTime", "LastTime", "SrcAddr", "DstAddr", "Traffic", "Mean", "Sport", "Dport",
-    "SrcPkts", "DstPkts", "TotPkts", "DstBytes", "SrcBytes", "TotBytes", "SrcLoad",
-    "DstLoad", "Load", "SrcRate", "DstRate", "Rate", "SrcLoss", "DstLoss", "Loss", 
-    "pLoss", "SrcJitter", "DstJitter", "SIntPkt", "DIntPkt", "Proto", "Dur", "TcpRtt",
-    "IdleTime", "Sum", "Min", "Max", "sDSb", "sTtl", "dTtl", "sIpId", "dIpId", 
-    "SAppBytes", "DAppBytes", "TotAppByte", "SynAck", "RunTime", "sTos", "SrcJitAct",
-    "DstJitAct", "Target"
-]
+data_columns = ["DstJitter", "Target"]
 
 data_columns_only_float = [
     "Mean", "Sport", "Dport", "SrcPkts", "DstPkts", "TotPkts", "DstBytes", "SrcBytes", "TotBytes", "SrcLoad",
@@ -161,34 +153,25 @@ data_columns_only_float = [
 parsed_stream = extract_key_value_columns(parsed_stream, data_columns)
 
 # I did not delete the Target column for the estimation
-parsed_stream = parsed_stream.drop("StartTime", "LastTime", "SrcAddr", "DstAddr", "Traffic", "key_value_pairs", \
-                                   "raw_value", 'sIpId', 'dIpId')
+parsed_stream = kafka_stream.selectExpr("CAST(value AS STRING) as raw_value") \
+    .withColumn("key_value_pairs", split(col("raw_value"), ","))
 
-# Add a current timestamp to each row - kafka needs it somehow
+data_columns = ["DstJitter", "Target"]
+
+parsed_stream = extract_key_value_columns(parsed_stream, data_columns)
+parsed_stream = parsed_stream.drop("key_value_pairs", "raw_value")
+
 parsed_stream_with_timestamp = parsed_stream.withColumn("current_timestamp", current_timestamp())
-
-vectorize_udf = udf(vectorize_features, VectorUDT())
-
-vectorized_stream = parsed_stream_with_timestamp.withColumn(
-    "features", vectorize_udf(*[col(f"{i}") for i in data_columns_only_float])
-).select("current_timestamp", "features", "Target")
-
-pca_udf = udf(apply_pca, DoubleType())
-
-reduced_stream = vectorized_stream.withColumn(
-    "reduced_dimension", pca_udf(col("features"))
-)
 
 change_detection_udf = udf(detect_change, StringType())
 
-stream_with_change_detection = reduced_stream.withColumn(
-    "result", change_detection_udf(col("reduced_dimension"))
-)
+# Stream Transformations
+vectorized_stream = parsed_stream_with_timestamp.select("current_timestamp", "DstJitter", "Target")
 
-stream_with_change_detection = stream_with_change_detection.drop("features")
+stream_with_detection = vectorized_stream.withColumn("result", change_detection_udf(col("DstJitter")))
 
 #Adding the True Positive, False Positive and False Negative values to the dataframe
-stream_with_metrics = stream_with_change_detection.withColumn(
+stream_with_metrics = stream_with_detection.withColumn(
     "TP", when((col("result") == "drift") & (col("Target") == 1), lit(1)).otherwise(lit(0))
 ).withColumn(
     "FP", when((col("result") == "drift") & (col("Target") == 0), lit(1)).otherwise(lit(0))
