@@ -183,9 +183,9 @@ services:
     networks:
       - change-detection-network
 
-  ks:
+  stepd:
     build:
-      context: ./ks
+      context: ./stepd
       dockerfile: Dockerfile
     depends_on:
       - kafka
@@ -193,9 +193,9 @@ services:
     environment:
       - KAFKA_BROKER=kafka:9092
     volumes:
-      - ./ks:/app/ks
+      - ./stepd:/app/stepd
       - ./model:/app/model   
-    working_dir: /app/ks
+    working_dir: /app/stepd
     networks:
       - change-detection-network
 
