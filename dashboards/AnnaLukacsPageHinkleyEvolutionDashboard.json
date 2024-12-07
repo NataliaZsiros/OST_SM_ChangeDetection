@@ -1,0 +1,299 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 3,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "ce5cah2kk5ibkb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.3.1",
+      "targets": [
+        {
+          "query": "from(bucket: \"ChangeDetection\")\n  |> range(start: -15m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"PageHinkleyResults\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> keep(columns: [\"DstJitter\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Distribution of DstJitter column",
+      "type": "histogram"
+    },
+    {
+      "datasource": {
+        "uid": "influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "accuracy"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.3.1",
+      "targets": [
+        {
+          "query": "from(bucket: \"ChangeDetection\")\n  |> range(start: -15m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"PageHinkleyResults\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with prec: if r.TP + r.FP != 0 then (r.TP / (r.TP + r.FP)) else 0 }))\n  |> map(fn: (r) => ({r with recall: if r.TP + r.FP != 0 then (r.TP / (r.TP + r.FN)) else 0 }))\n  |> map(fn: (r) => ({ r with f1_score: if (r.prec + r.recall) != 0 then (2 * r.prec * r.recall / (r.prec + r.recall)) else 0 }))\n  |> map(fn: (r) => ({ r with accuracy: if (r.TP + r.TN + r.FP + r.FN) != 0 then ((r.TP + r.TN) / (r.TP + r.TN + r.FP + r.FN)) else 0 }))\n  |> keep(columns: [\"_time\", \"prec\", \"recall\", \"f1_score\", \"accuracy\"])\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Precision, Recall, F1 score and Accuracy",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "ce5cah2kk5ibkb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "target"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": []
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.3.1",
+      "targets": [
+        {
+          "query": "from(bucket: \"ChangeDetection\")\n  |> range(start: -15m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"PageHinkleyResults\")\n  |> drop(columns: [\"result\"])\n  |> aggregateWindow(every: 1h, fn: mean, createEmpty: false)\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with prec: if (r.TP + r.FP) != 0.0 then (r.TP / (r.TP + r.FP)) else 0.0 }))\n  |> map(fn: (r) => ({r with recall: if r.TP + r.FP != 0.0 then (r.TP / (r.TP + r.FN)) else 0.0 }))\n  |> map(fn: (r) => ({ r with f1_score: if (r.prec + r.recall) != 0.0 then (2.0 * r.prec * r.recall / (r.prec + r.recall)) else 0.0 }))\n  |> map(fn: (r) => ({ r with accuracy: if (r.TP + r.TN + r.FP + r.FN) != 0.0 then ((r.TP + r.TN) / (r.TP + r.TN + r.FP + r.FN)) else 0.0 }))\n  |> keep(columns: [\"prec\", \"recall\", \"f1_score\", \"accuracy\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Aggregated precision, recall, f1_score and accuracy",
+      "type": "gauge"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 40,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "2024-12-07T11:33:41.012Z",
+    "to": "2024-12-07T11:48:37.299Z"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Pipeline4_Evaluation of PageHinkley",
+  "uid": "fe673z6aj7egwb",
+  "version": 1,
+  "weekStart": ""
+}
