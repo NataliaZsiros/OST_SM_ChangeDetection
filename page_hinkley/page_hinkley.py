@@ -47,7 +47,7 @@ while True:
 print("PCA model is available")
 
 # Initialize Page-Hinkley Detector
-ph = PageHinkley(delta=0.001, threshold=1, direction="negative", burn_in=1)
+ph = PageHinkley(delta=0.01, threshold=1, direction="negative", burn_in=1)
 
 ###########################################################################
 #Functions
@@ -99,17 +99,29 @@ def write_to_influxdb(batch_df, batch_id):
     for index, row in batch_pd.iterrows():
         # Add here the additional change detection method results (if it detected change or not)
         # and add the calculated true positive, false positive and false negative values
+        print("-" * 40)
+        print(f"  DstJitter: {row['DstJitter']}")
+        print(f"  result: {row['result']}")
+        print(f"  Target: {row['Target']}")
+        print(f"  TP: {row['TP']}")
+        print(f"  FP: {row['FP']}")
+        print(f"  FN: {row['FN']}")
+        print(f"  TN: {row['TN']}")
+        print(f"  current_timestamp: {row['current_timestamp']}")
+        print("-" * 40)
         point = Point("PageHinkleyResults") \
             .field("DstJitter", row["DstJitter"]) \
             .field("TP", row["TP"]) \
             .field("FP", row["FP"]) \
             .field("FN", row["FN"]) \
+            .field("TN", row["TN"]) \
             .field("target", row["Target"]) \
             .tag("result", row["result"]) \
             .time(row["current_timestamp"], write_precision="ms")
         
         # Write the point to InfluxDB
         write_api.write(bucket=bucket, org=org, record=point)
+        print('Written to InfluxDB!')
 
 ###########################################################################
 
@@ -177,13 +189,15 @@ stream_with_metrics = stream_with_detection.withColumn(
     "FP", when((col("result") == "drift") & (col("Target") == 0), lit(1)).otherwise(lit(0))
 ).withColumn(
     "FN", when((col("result").isNull()) & (col("Target") == 1), lit(1)).otherwise(lit(0))
+).withColumn(
+    "TN", when((col("result").isNull()) & (col("Target") == 0), lit(1)).otherwise(lit(0))
 )
 
 stream_with_metrics.printSchema()
 
 #writing the results to the console and also writing it to influxdb
 query = stream_with_metrics.writeStream \
-    .outputMode("append") \
+    .outputMode("update") \
     .format("console") \
     .option("truncate", "false") \
     .foreachBatch(write_to_influxdb) \
